@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>自定义倒计时 | 可编辑版本</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(to bottom, #8B0000, #D32F2F);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+        }
+        
+        /* 福字背景 */
+        .fu-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.15;
+            z-index: 1;
+            pointer-events: none;
+            font-size: 60px;
+            color: #FFD700;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            align-items: center;
+        }
+        
+        .fu-bg span {
+            margin: 10px;
+            opacity: 0.4;
+        }
+        
+        /* 主容器 */
+        .main-container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 400px;
+            background-color: #D32F2F;
+            border: 4px solid #FF8C00;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            margin: 10px auto;
+        }
+        
+        /* 标题 */
+        .title {
+            text-align: center;
+            font-size: 1.8rem;
+            color: #FFFFFF;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+            font-weight: bold;
+        }
+        
+        /* 倒计时网格 */
+        .countdown-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin: 15px 0;
+        }
+        
+        .countdown-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #FFD700;
+            border-radius: 6px;
+            padding: 12px 5px;
+            min-height: 85px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .countdown-number {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #8B0000;
+            font-family: 'Courier New', monospace;
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+        
+        .countdown-label {
+            font-size: 1.1rem;
+            color: #8B0000;
+            font-weight: bold;
+        }
+        
+        /* 烟花装饰 */
+        .firework-decoration {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            z-index: 2;
+            opacity: 0.8;
+        }
+        
+        .firework-left {
+            top: 10px;
+            left: 10px;
+        }
+        
+        .firework-right {
+            top: 10px;
+            right: 10px;
+        }
+        
+        /* 简洁祝福区域 */
+        .blessing-compact {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 1.1rem;
+            color: #FFECB3;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        /* 底部信息 */
+        .footer {
+            text-align: center;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            color: #FFECB3;
+            font-size: 0.85rem;
+        }
+        
+        /* 按钮区域 */
+        .button-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            gap: 8px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 10px 5px;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-blessing {
+            background-color: #FFD700;
+            color: #8B0000;
+        }
+        
+        .btn-fireworks {
+            background-color: #FF8C00;
+            color: #fff;
+        }
+        
+        .btn-settings {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* 设置面板 */
+        .settings-panel {
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .settings-panel.show {
+            display: block;
+        }
+        
+        .setting-group {
+            margin-bottom: 15px;
+        }
+        
+        .setting-label {
+            display: block;
+            margin-bottom: 5px;
+            color: #FFECB3;
+            font-size: 0.9rem;
+        }
+        
+        .setting-input {
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+        }
+        
+        .setting-input:focus {
+            outline: none;
+            border-color: #FFD700;
+        }
+        
+        .btn-save {
+            width: 100%;
+            background-color: #2196F3;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        /* 烟花效果 */
+        .firework {
+            position: fixed;
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 400px) {
+            .main-container {
+                padding: 12px;
+                max-width: 95%;
+            }
+            
+            .title {
+                font-size: 1.5rem;
+                margin-bottom: 15px;
+            }
+            
+            .countdown-grid {
+                gap: 6px;
+            }
+            
+            .countdown-item {
+                padding: 10px 4px;
+                min-height: 75px;
+            }
+            
+            .countdown-number {
+                font-size: 1.9rem;
+            }
+            
+            .countdown-label {
+                font-size: 1rem;
+            }
+            
+            .blessing-compact {
+                font-size: 1rem;
+                padding: 8px;
+            }
+            
+            .firework-decoration {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .firework-left {
+                top: 8px;
+                left: 8px;
+            }
+            
+            .firework-right {
+                top: 8px;
+                right: 8px;
+            }
+            
+            .button-row {
+                flex-direction: column;
+                gap: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 福字背景 -->
+    <div class="fu-bg" id="fuBg"></div>
+    
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- 烟花图案装饰 -->
+        <div class="firework-decoration firework-left">
+            <svg class="firework-svg" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="8" fill="#FFD700"/>
+                <line x1="50" y1="15" x2="50" y2="35" stroke="#FFD700" stroke-width="3"/>
+                <line x1="85" y1="50" x2="65" y2="50" stroke="#FFD700" stroke-width="3"/>
+                <line x1="50" y1="85" x2="50" y2="65" stroke="#FFD700" stroke-width="3"/>
+                <line x1="15" y1="50" x2="35" y2="50" stroke="#FFD700" stroke-width="3"/>
+                <line x1="65" y1="35" x2="75" y2="25" stroke="#FFD700" stroke-width="3"/>
+                <line x1="65" y1="65" x2="75" y2="75" stroke="#FFD700" stroke-width="3"/>
+                <line x1="35" y1="65" x2="25" y2="75" stroke="#FFD700" stroke-width="3"/>
+                <line x1="35" y1="35" x2="25" y2="25" stroke="#FFD700" stroke-width="3"/>
+            </svg>
+        </div>
+        
+        <div class="firework-decoration firework-right">
+            <svg class="firework-svg" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="8" fill="#FFD700"/>
+                <line x1="50" y1="15" x2="50" y2="35" stroke="#FFD700" stroke-width="3"/>
+                <line x1="85" y1="50" x2="65" y2="50" stroke="#FFD700" stroke-width="3"/>
+                <line x1="50" y1="85" x2="50" y2="65" stroke="#FFD700" stroke-width="3"/>
+                <line x1="15" y1="50" x2="35" y2="50" stroke="#FFD700" stroke-width="3"/>
+                <line x1="65" y1="35" x2="75" y2="25" stroke="#FFD700" stroke-width="3"/>
+                <line x1="65" y1="65" x2="75" y2="75" stroke="#FFD700" stroke-width="3"/>
+                <line x1="35" y1="65" x2="25" y2="75" stroke="#FFD700" stroke-width="3"/>
+                <line x1="35" y1="35" x2="25" y2="25" stroke="#FFD700" stroke-width="3"/>
+            </svg>
+        </div>
+        
+        <!-- 标题 - 可自定义部分 -->
+        <div class="title" id="countdownTitle">距离大宝放假还有</div>
+        
+        <!-- 倒计时网格 -->
+        <div class="countdown-grid">
+            <div class="countdown-item">
+                <div id="days" class="countdown-number">20</div>
+                <div class="countdown-label">天</div>
+            </div>
+            <div class="countdown-item">
+                <div id="hours" class="countdown-number">06</div>
+                <div class="countdown-label">时</div>
+            </div>
+            <div class="countdown-item">
+                <div id="minutes" class="countdown-number">23</div>
+                <div class="countdown-label">分</div>
+            </div>
+            <div class="countdown-item">
+                <div id="seconds" class="countdown-number">13</div>
+                <div class="countdown-label">秒</div>
+            </div>
+        </div>
+        
+        <!-- 简洁祝福 -->
+        <div class="blessing-compact" id="blessingText">
+            新年快乐，万事如意！
+        </div>
+        
+        <!-- 设置面板 -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="setting-group">
+                <label class="setting-label">倒计时标题（例如：距离大宝放假还有）</label>
+                <input type="text" class="setting-input" id="titleInput" placeholder="输入倒计时标题" value="距离大宝放假还有">
+            </div>
+            
+            <div class="setting-group">
+                <label class="setting-label">选择倒计时时间</label>
+                <input type="datetime-local" class="setting-input" id="timeInput" value="2026-02-10T17:30">
+            </div>
+            
+            <button class="btn-save" id="saveSettings">保存设置</button>
+        </div>
+        
+        <!-- 按钮行 -->
+        <div class="button-row">
+            <button id="generateBlessing" class="btn btn-blessing">更换祝福</button>
+            <button id="fireworksBtn" class="btn btn-fireworks">烟花效果</button>
+            <button id="settingsBtn" class="btn btn-settings">设置</button>
+        </div>
+        
+        <!-- 底部信息 - 自动同步时间 -->
+        <div class="footer" id="footerInfo">
+            <div id="targetTime">目标时间：2026年2月10日 17:30</div>
+        </div>
+    </div>
+    
+    <script>
+        // 从本地存储加载设置
+        function loadSettings() {
+            const savedTitle = localStorage.getItem('countdownTitle');
+            const savedTime = localStorage.getItem('countdownTargetTime');
+            
+            if (savedTitle) {
+                document.getElementById('titleInput').value = savedTitle;
+                document.getElementById('countdownTitle').textContent = savedTitle;
+            }
+            
+            if (savedTime) {
+                document.getElementById('timeInput').value = savedTime;
+                updateFooterTime(savedTime);
+            } else {
+                // 使用默认时间
+                updateFooterTime('2026-02-10T17:30');
+            }
+        }
+        
+        // 更新底部时间显示
+        function updateFooterTime(dateTimeString) {
+            const date = new Date(dateTimeString);
+            const formattedDate = date.toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            const formattedTime = date.toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+            
+            document.getElementById('targetTime').textContent = `目标时间：${formattedDate} ${formattedTime}`;
+        }
+        
+        // 生成福字背景
+        function createFuBackground() {
+            const fuBg = document.getElementById('fuBg');
+            const fuCount = 12;
+            
+            for (let i = 0; i < fuCount; i++) {
+                const fu = document.createElement('span');
+                fu.textContent = '福';
+                fu.style.fontSize = (35 + Math.random() * 50) + 'px';
+                fu.style.opacity = 0.2 + Math.random() * 0.3;
+                fu.style.transform = `rotate(${Math.random() * 360}deg)`;
+                fu.style.position = 'absolute';
+                fu.style.left = Math.random() * 100 + 'vw';
+                fu.style.top = Math.random() * 100 + 'vh';
+                fuBg.appendChild(fu);
+            }
+        }
+        
+        // 新年祝福语库
+        const blessings = [
+            "新年快乐，万事如意！",
+            "身体健康，心想事成！",
+            "财源广进，阖家幸福！",
+            "工作顺利，步步高升！",
+            "笑口常开，好运连连！",
+            "福星高照，吉祥如意！",
+            "年年有余，岁岁平安！",
+            "金玉满堂，喜气洋洋！",
+            "春风得意，前程似锦！",
+            "五福临门，六六大顺！",
+            "新春佳节，阖家团圆！",
+            "心想事成，美梦成真！",
+            "万事顺意，好运常伴！",
+            "平安喜乐，幸福安康！",
+            "恭喜发财，红包拿来！"
+        ];
+        
+        // 生成随机祝福语
+        document.getElementById('generateBlessing').addEventListener('click', function() {
+            const blessingText = document.getElementById('blessingText');
+            const currentText = blessingText.textContent;
+            let newText;
+            
+            do {
+                newText = blessings[Math.floor(Math.random() * blessings.length)];
+            } while (newText === currentText && blessings.length > 1);
+            
+            // 添加淡出淡入效果
+            blessingText.style.opacity = 0;
+            setTimeout(() => {
+                blessingText.textContent = newText;
+                blessingText.style.opacity = 1;
+            }, 200);
+        });
+        
+        // 春节放假倒计时
+        function updateCountdown() {
+            // 从本地存储获取目标时间，如果没有则使用默认
+            const savedTime = localStorage.getItem('countdownTargetTime') || '2026-02-10T17:30';
+            const targetDate = new Date(savedTime).getTime();
+            const now = new Date().getTime();
+            const timeLeft = targetDate - now;
+            
+            if (timeLeft > 0) {
+                const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                
+                document.getElementById('days').textContent = days.toString().padStart(2, '0');
+                document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+                document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+                document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+            } else {
+                // 如果时间已经过去，显示完成状态
+                document.getElementById('days').textContent = "完";
+                document.getElementById('hours').textContent = "成";
+                document.getElementById('minutes').textContent = "！";
+                document.getElementById('seconds').textContent = "🎉";
+                
+                // 获取标题
+                const title = document.getElementById('countdownTitle').textContent;
+                const newTitle = title.replace('还有', '已到');
+                document.getElementById('countdownTitle').textContent = newTitle;
+                
+                document.getElementById('blessingText').textContent = "时间到啦！庆祝吧！";
+            }
+        }
+        
+        // 创建烟花效果
+        function createFirework(x, y) {
+            const colors = ['#FFD700', '#FF8C00', '#FF5722', '#FF4081', '#4CAF50', '#2196F3'];
+            const particleCount = 25;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'firework';
+                
+                // 随机颜色
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.backgroundColor = color;
+                
+                // 设置初始位置
+                particle.style.left = `${x}px`;
+                particle.style.top = `${y}px`;
+                
+                // 随机角度和距离
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 15 + Math.random() * 60;
+                
+                // 随机大小
+                const size = 2 + Math.random() * 4;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // 添加到页面
+                document.body.appendChild(particle);
+                
+                // 动画
+                const animation = particle.animate([
+                    { 
+                        transform: 'translate(0, 0) scale(1)',
+                        opacity: 1 
+                    },
+                    { 
+                        transform: `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px) scale(0)`,
+                        opacity: 0 
+                    }
+                ], {
+                    duration: 500 + Math.random() * 500,
+                    easing: 'cubic-bezier(0.1, 0.8, 0.9, 0.1)'
+                });
+                
+                // 动画结束后移除元素
+                animation.onfinish = () => {
+                    particle.remove();
+                };
+            }
+        }
+        
+        // 烟花按钮点击事件
+        document.getElementById('fireworksBtn').addEventListener('click', function(e) {
+            // 在按钮周围生成烟花
+            const rect = e.target.getBoundingClientRect();
+            const x = rect.left + rect.width / 2;
+            const y = rect.top + rect.height / 2;
+            
+            createFirework(x, y);
+            
+            // 在屏幕其他随机位置也生成烟花
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    const randomX = 30 + Math.random() * (window.innerWidth - 60);
+                    const randomY = 80 + Math.random() * (window.innerHeight - 160);
+                    createFirework(randomX, randomY);
+                }, i * 200);
+            }
+        });
+        
+        // 设置按钮点击事件
+        document.getElementById('settingsBtn').addEventListener('click', function() {
+            const settingsPanel = document.getElementById('settingsPanel');
+            settingsPanel.classList.toggle('show');
+        });
+        
+        // 保存设置按钮点击事件
+        document.getElementById('saveSettings').addEventListener('click', function() {
+            const titleInput = document.getElementById('titleInput').value;
+            const timeInput = document.getElementById('timeInput').value;
+            
+            // 保存到本地存储
+            localStorage.setItem('countdownTitle', titleInput);
+            localStorage.setItem('countdownTargetTime', timeInput);
+            
+            // 更新页面显示
+            document.getElementById('countdownTitle').textContent = titleInput;
+            updateFooterTime(timeInput);
+            
+            // 隐藏设置面板
+            document.getElementById('settingsPanel').classList.remove('show');
+            
+            // 显示保存成功的提示
+            alert('设置已保存！倒计时将自动更新。');
+            
+            // 立即更新倒计时
+            updateCountdown();
+        });
+        
+        // 点击屏幕任意位置也可以放烟花
+        document.addEventListener('click', function(e) {
+            // 避免与按钮事件冲突
+            if (e.target.id !== 'fireworksBtn' && e.target.id !== 'generateBlessing' && e.target.id !== 'settingsBtn') {
+                createFirework(e.clientX, e.clientY);
+            }
+        });
+        
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', function() {
+            // 加载保存的设置
+            loadSettings();
+            
+            // 生成福字背景
+            createFuBackground();
+            
+            // 启动倒计时
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+            
+            // 初始播放一个烟花效果
+            setTimeout(() => {
+                createFirework(window.innerWidth / 2, window.innerHeight / 2);
+            }, 500);
+        });
+    </script>
+</body>
+</html>
